@@ -7,12 +7,25 @@ import time             #permet d'utiliser sleep
 import json             #pour interragir avec des fichiers json
 import os               #pour interragir avec le système, lancer des commandes en bash par exemple
 import subprocess       #même idée
+from chat import *
 
 from discord.ext import commands
 
-bot = commands.Bot(command_prefix = '$' ) #création du préfixe qui servira à dire "ceci est une commande"
+bot = commands.Bot(command_prefix = '$') #création du préfixe qui servira à dire "ceci est une commande"
+
+#************ FERMETURE DU BOT *************************************************
+
+@bot.command(hidden=True)
+async def quit(ctx):
+    if ctx.author.id == 404395089389944832 :
+        await ctx.send("Au revoir")
+        print("Bot éteint sans anicroches")
+        await bot.close()
+    else :
+        await ctx.send("nope")
 
 #************* JEU DE HASARD ***************************************************
+#première commande du bot pour découvrir la librairie discord.py
 
 @bot.command(help="Un petit jeu pour tuer le temps : il faut taper $score suivi d'un guess entre 0 et 100. Le bot trouve un nombre mystère aléatoire et fait la différence avec ton guess. Plus celle-ci est petite, plus tu es lucky")                           #commande $score : permet de faire un guess et d'obtenir la différence avec ce guess
 async def score(ctx, guess):
@@ -67,59 +80,6 @@ async def best(ctx):
     await ctx.send("{} a obtenu le meilleur delta, à savoir {} le {}".format(nom, min, date))
 
 
-# ************* UNE SERIE DE FLORILEGES DE PHRASES TYPIQUES ********************
-
-# SERRANO --------------
-@bot.command(help="Quelques phrases typiques 😉")
-async def serrano(ctx):
-    random.seed()                           #initialise la seed
-    lol = ["Considérez les préfixes comme étant corrects",
-            "N'oubliez pas, les distanciels c'est 80% du temps de travail !",
-            "Merci à Emmanuel Desmontils :heartpulse: :heart_eyes:",
-            "On range son portable !",
-            "FAITES PASSER LE PAQUET !!! :rage:",
-            "Ne soyez pas non plus de mauvaise foi !",
-            "UN PAQUET C'EST UNE COPIE",
-            "Ne prenez pas mon stylo sinon on va tous être malade :nauseated_face: ",
-            "Faut être plus précis",
-            "Vous devez compléter le tableau !"
-            ]
-    await ctx.send(lol[random.randint(0,(len(lol)-1))])
-
-# MEKAOUCHE ------------------
-@bot.command(help="Quelques phrases typiques 😉")
-async def mekaouche(ctx):
-    random.seed()
-    lol = ["Tu vas pas me salir, je vais pas te salir",
-            "Et si on commençait par 30 minutes pour découvrir un nouveau language : Bash. Quoi ? vous avez eu des cours ?",
-            "MAIS REGARDE DANS TON COURS !!",
-            "Regarde dans ton cours..."]
-    await ctx.send(lol[random.randint(0,(len(lol)-1))])
-
-
-# GODART --------------
-@bot.command(help="Quelques phrases typiques 😉")
-async def godart(ctx):
-    random.seed()
-    lol = ["on a réglé le problème en supprimant l'individu",
-    "Dans le cadre d'un management de projet on est plus sur un management de crise total que de management pro-actif",
-    "C’est pas parce que c’est ma réponse que vous devez mettre la mienne"]
-    await ctx.send(lol[random.randint(0,(len(lol)-1))])
-
-# TELETCHEA -----------------
-@bot.command()
-async def teletchea(ctx):
-    cartouches = open("cartouches.txt","r")
-    qte=cartouches.read()
-    await ctx.send('{} articles se sont pris une cartouche :gun:'.format(qte))
-    qte=int(qte)
-    qte=qte+1
-    cartouches.close
-    cartouches = open("cartouches.txt","w")
-    qte=str(qte)
-    cartouches.write(qte)
-    cartouches.close
-
 #************* SUPPRESSION DE MESSAGES *****************************************
 
 @bot.command(help="efface le nombre de messages indiqué", hidden=True)
@@ -134,6 +94,21 @@ async def clear_error():
     elif (isinstance(error, commands.MissingRequiredArgument)):
         await ctx.send("Il faut mettre un nombre après $score")
 
+
+#************* UNE FONCTION POUR LIMITER LES DISTRACTIONS **********************
+@bot.command(help="Pour récupérer l'accès aux salons")
+async def retour(ctx):
+    role_m1 = discord.utils.get(ctx.guild.roles, id=627581972025442314)
+    role_retour = discord.utils.get(ctx.guild.roles, id=671289711846883328)
+    await ctx.author.add_roles(role_m1, reason=None, atomic=True)
+    await ctx.author.remove_roles(role_retour, reason=None, atomic=True)
+
+@bot.command(help="Quand tu as besoin d'éliminer les distractions liées à ce discord")
+async def silence(ctx):
+    role_m1 = discord.utils.get(ctx.guild.roles, id=627581972025442314)
+    role_retour = discord.utils.get(ctx.guild.roles, id=671289711846883328)
+    await ctx.author.remove_roles(role_m1, reason=None, atomic=True)
+    await ctx.author.add_roles(role_retour, reason=None, atomic=True)
 
 #************* GESTIONS DE SALONS **********************************************
 #création de salons privés
@@ -174,8 +149,9 @@ async def dels_error():
 #Comptage des messages, envoi de messages aléatoire et réaction aux messages ***
 @bot.event
 async def on_message(message):
+    
     #partie comptage ---------
-    if message.guild.id == 621610918429851649 :
+    if message.guild.id == 621610918429851649 and len(message.content)>2 :
         auteur=str(message.author)
         try :
             with open("rangs.json", "r+") as rangs:
@@ -191,82 +167,11 @@ async def on_message(message):
                 rangs.write(json.dumps(liste_auteurs, sort_keys=True, indent=4))
         except :
             pass
-
-    #partie envoi de message aléatoire (en essayant de ne pas spam)
-    if re.search('\?', (message.content)) and not message.author.bot :
-        if int(message.id)%21 == 0 :
-            lol = ["Oui", "Non"]
-            await message.channel.send(lol[random.randint(0,(len(lol)-1))])
-    else :
-        if int(message.id)%21 == 0 and not message.author.bot:
-            random.seed()
-            lol = ["...",
-                    "OK",
-                    f"On t'as déjà dit que tu as de beaux yeux ? 😍 {message.author.mention} ",
-                    "C'est pas faux !",
-                    "Oui",
-                    "Non",
-                    "J'aime les fruits au sirop",
-                    "J'ai déjà entendu cette théorie",
-                    "meh..",
-                    "💓",
-                    "Haha, bonne blague :-) ",
-                    "Nope",
-                    "Je ne crois pas non"
-                    ]
-            await message.channel.send(lol[random.randint(0,(len(lol)-1))])
-
-        #partie réaction à des messages ----------
-        if re.search('bois|boire|bière|berlin|sur mesure|vestiaire|chat noir|la maison|bar |biere|beer', (message.content).lower()):
-            await message.add_reaction("🍺")
-
-        if re.search('soif', (message.content).lower()) :
-            await message.add_reaction("🍻")
-
-        if re.search('whiskey|whisky', (message.content).lower()) :
-            await message.add_reaction("🥃")
-
-        if re.search(' bot', (message.content).lower()) :
-            if int(message.id)%7 == 0 :
-                lol = ["On m'apelle ?",
-                        f"Tu parles de moi {message.author.mention}, tu veux te battre ?",
-                        "Foutez moi la paix !",
-                        "https://www.youtube.com/watch?v=bfzDbmYNm5Y"
-                        ]
-                await message.channel.send(lol[random.randint(0,(len(lol)-1))])
-
-
-        if re.search('merci', (message.content).lower()) and not message.author.bot and int(message.id)%2 == 0 :
-            lol = ["Mais de rien, c'est avec plaisir !",
-                    "De rien !",
-                    f"J'aime aider les gens, pas de souci {message.author.mention}",
-                    f"Uniquement pour toi {message.author.mention}"
-                    ]
-            await message.channel.send(lol[random.randint(0,(len(lol)-1))])
-
-        if (re.search('tg', (message.content).lower())
-            or re.search('ta gueule', (message.content).lower())
-            or re.search('la ferme', (message.content).lower())
-            or re.search('tais toi', (message.content).lower())):
-            lol = [f"Tu vas vite te calmer ! {message.author.mention}",
-                    f"Ça va mal se mettre ! {message.author.mention}",
-                    f"Ta maman ne t'as pas appris la politesse ? Gourgandin.e va {message.author.mention}",
-                    "Pour toute réclamation quand à mon comportement, le bureau des plaintes est au fond à droite 😉",
-                    "Merci de respecter la bienséance et la politesse dans ce salon.",
-                    ]
-            await message.channel.send(lol[random.randint(0,(len(lol)-1))])
-            await message.add_reaction("😡")
-            await message.add_reaction("😒")
-            await message.add_reaction("🙄")
-            await message.add_reaction("😞")
-            await message.add_reaction("😠")
-
-        if re.search('alcool', (message.content).lower()) :
-            await message.add_reaction("🍷")
-
-        if re.search('fabien|panic|panique', (message.content).lower()) :
-            emoji = "<:Ipanic:648211901263642637>"
-            await message.add_reaction(emoji)
+    #fonctions issues de "chat.py" //usage humoristique
+    await rand_mess(message)    #envoi aléatoire de message
+    await react_emoji(message)  #réaction par emoji à certains messages
+    await react_mess(message)   #réaction textuelle à certains messages
+    #await discut(message)       #réaction à une mention du bot, pas encore implémentée
 
     await bot.process_commands(message)
 
@@ -291,11 +196,11 @@ async def mess(ctx):
         message = (f"Tu as envoyé {nb_messages} messages {ctx.message.author.mention}\nTu fais partie de l'élite, le top 10%, GG")
     elif nb_messages/somme > 1/15 :
         message = (f"Tu as envoyé {nb_messages} messages {ctx.message.author.mention}\nPas dégueu, merci de rendre ce forum actif !")
-    elif nb_messages/somme > 1/20 :
-        message = (f"Tu as envoyé {nb_messages} messages {ctx.message.author.mention}\nDes gens parlent plus, des gens parlent moins")
-    elif nb_messages/somme > 1/25 :
-        message = (f"Tu as envoyé {nb_messages} messages {ctx.message.author.mention}\nQuelques efforts sont à fournir")
     elif nb_messages/somme > 1/30 :
+        message = (f"Tu as envoyé {nb_messages} messages {ctx.message.author.mention}\nDes gens parlent plus, des gens parlent moins")
+    elif nb_messages/somme > 1/60 :
+        message = (f"Tu as envoyé {nb_messages} messages {ctx.message.author.mention}\nQuelques efforts sont à fournir")
+    elif nb_messages/somme > 1/100 :
         message = (f"Tu as envoyé {nb_messages} messages {ctx.message.author.mention}\nIl va falloir penser à se réveiller")
     else :
         message = (f"Tu as envoyé {nb_messages} messages {ctx.message.author.mention}\nJe crois que je ne peux plus rien pour toi...")
@@ -322,7 +227,7 @@ async def rank(ctx):
     embed = discord.Embed(title="Qui spam le plus le salon ?", description=sortie)
     await ctx.send(embed=embed)
 
-#************ ON AFFICHE LES BOLCHEVIKS QUI SUPPRIMENT LES MESSAGES *******
+#************ ON AFFICHE LES BOLCHEVIKS ET ON LOG LES MESSAGES SUPPRIMES *******
 
 #en cas de suppression de message
 @bot.event
@@ -336,8 +241,6 @@ async def on_message_delete(message):
         async for entry in guild.audit_logs(limit=1, after=now, action=discord.AuditLogAction.message_delete):
             censeur=entry.user        #on récupère le nom du modo
             date_supr=entry.created_at
-        print (f"heure suppression  \t: {now}\nheure log \t: {date_supr}")
-
         if now<date_supr :
             embed = discord.Embed(
                 title="Alerte !",
@@ -382,11 +285,17 @@ async def aide(ctx):
     embed.add_field(
         name="$rank",
         value="Le classement des gens les plus bavards")
-
+    embed.add_field(
+        name="$jeux",
+        value="Appelle le bot de jeux s'il n'est pas en ligne\n\
+        Celui-ci permet de jouer à puissance 4 pour l'instant")
+    embed.add_field(
+        name="$silence, $retour",
+        value="$silence permet de masquer la majorité des salons, $retour permet de revenir à la normale")
     await ctx.send(embed=embed)
 
 #************** APPEL DU BOT DE TESTING ****************************************
-
+# Ouvre un bot servant à tester du code sans avoir à mettre le bot principal offline
 @bot.command(help="Apelle un bébé bot afin de réaliser des tests à l'éthique discutable")
 async def BOT(ctx):
     await ctx.send("Je t'envoie mon fils, il est un peu bordélique mais parfois il est utile...")
@@ -398,42 +307,39 @@ async def BOT(ctx):
 
 @bot.command(help="Appelle le bot de jeux")
 async def jeux(ctx):
+    channel = bot.get_channel(667101857948237844)
     await ctx.send("Prend garde, le maître des jeux arrive !")
+    if ctx.channel.id not in [667101857948237844, 640263768764317699] :
+        await ctx.send(f"Pour la suite, ça se passe ici : {channel.mention}")
     with open("summon.txt", "w+") as summon :
         summon.write(str(ctx.channel.id))
     subprocess.Popen("py -3 p4.py")
 
-#************ FERMETURE DU BOT *************************************************
-
-@bot.command(hidden=True)
-async def quit(ctx):
-    if ctx.author.id == 404395089389944832 :
-        await ctx.send("Au revoir")
-        print("Bot éteint sans anicroches")
-        await bot.close()
-    else :
-        await ctx.send("nope")
-
+#gestion des conflits avec un autre bot
 @bot.command(hidden=True)
 async def panic(ctx):
-    pass
+    await ctx.send("Utilises **panic* si tu souhaites connaitre ton niveau de panique")
+
 
 #************* GESTION GLOBALE DES ERREURS *************************************
-
+from discord.ext.commands import CommandNotFound
 @bot.event
 async def on_command_error(ctx, error):
     pass
-"""    if isinstance(error, command.CommandNotFound):
+    if isinstance(error, CommandNotFound):
         await ctx.send("Cette commande n'existe pas")
     else:
         #pass
-        print(error)"""
+        print(error)
 
 #*************MESSAGE D'ACCUEIL ************************************************
 
 @bot.event
 async def on_ready():
     print('bonjour')
+    global process
+    process = subprocess.Popen("py -3 panic.py") #ouverture du PanicBot
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="vos conneries"))
 
 #************ FIN ***********************FIN ***********************************
 
